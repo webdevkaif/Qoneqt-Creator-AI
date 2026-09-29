@@ -1,0 +1,40 @@
+{
+  // ── Python interpreter ─────────────────────────────────────────────────
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/venv/bin/python",
+  "python.pythonPath": "${workspaceFolder}/backend/venv/bin/python",
+
+  // ── Pylance / Pyright settings ─────────────────────────────────────────
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/backend"
+  ],
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.autoSearchPaths": true,
+  "python.analysis.diagnosticMode": "workspace",
+  "python.analysis.useLibraryCodeForTypes": true,
+
+  // ── Suppress noisy import-not-found for optional extras ────────────────
+  "python.analysis.ignore": [
+    "**/venv/**",
+    "**/node_modules/**",
+    "**/.git/**"
+  ],
+
+  // ── Terminal always activates venv automatically ───────────────────────
+  "python.terminal.activateEnvironment": true,
+
+  // ── TypeScript / Next.js (frontend) ───────────────────────────────────
+  "typescript.tsdk": "${workspaceFolder}/frontend/node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  // ── Editor quality of life ─────────────────────────────────────────────
+  "editor.formatOnSave": true,
+  "editor.rulers": [120],
+  "files.exclude": {
+    "**/venv/**": true,
+    "**/__pycache__/**": true,
+    "**/*.pyc": true,
+    "**/node_modules/**": true,
+    "**/.next/**": true
+  }
+}
