@@ -1,141 +1,262 @@
-# Qoneqt Creator AI
+# Qoneqt Creator AI 🎬✨
 
-Qoneqt Creator AI is an AI-powered full-stack web application designed to transform topics, prompts, and ideas into polished, community-specific short videos ready for the Qoneqt Global Feed.
+> **AI-powered video creation platform** — transform any topic, prompt, or trend into a polished short video ready for the Qoneqt Global Feed.
 
-## 🚀 Features
-
-- **End-to-End AI Pipeline**: Generates scripts, storyboards, voice-overs, subtitles, and visual assets automatically.
-- **Provider Agnostic**: Out-of-the-box support for OpenAI (GPT-4o, DALL-E 3, TTS-1) and a seamless "Demo Mode" for local development without API keys.
-- **FFmpeg Engine**: Assembles scene assets, crops videos, applies subtitles, and normalizes audio locally.
-- **Advanced Job Queue**: Background processing with Celery and Redis to handle long-running AI and rendering tasks.
-- **Premium Frontend**: Next.js 14 App Router, React Context for Auth, and Tailwind CSS for a dark-mode glassmorphic aesthetic.
-- **Honest Qoneqt Integration**: Provides manual copy-paste workflows if official APIs aren't provided, without faking success.
-
-## 🛠 Tech Stack
-
-- **Frontend**: Next.js (TypeScript), React, Tailwind CSS, Lucide Icons, Axios.
-- **Backend**: FastAPI, Python 3.11, Pydantic, Beanie (MongoDB async ODM).
-- **Workers**: Celery, Redis.
-- **Media**: FFmpeg.
-- **Infrastructure**: Docker, Docker Compose.
+![Next.js](https://img.shields.io/badge/Next.js-14-black?style=flat-square&logo=next.js)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?style=flat-square&logo=fastapi)
+![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=flat-square&logo=python)
+![MongoDB](https://img.shields.io/badge/MongoDB-Motor%2FBeanie-47A248?style=flat-square&logo=mongodb)
+![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
 
 ---
 
-## 💻 Local Development Setup
+## ⚡ Quick Start — Run Locally
+
+> **No Docker, no cloud accounts needed.** The app runs in Demo Mode automatically.
 
 ### Prerequisites
-- Docker and Docker Compose
-- Node.js (v18+)
-- (Optional) FFmpeg installed locally if you want to run backend without Docker.
+- **Node.js** v18+ — [Download](https://nodejs.org)
+- **Python** 3.9+ — [Download](https://python.org)
 
-### 1. Environment Configuration
-
-1. Copy the example environment file:
-   ```bash
-   cp .env.example .env
-   ```
-2. Open `.env` and configure your API keys. 
-   - **Demo Mode**: If you leave `OPENAI_API_KEY` blank, the app runs in Demo Mode, generating local placeholder assets and mock scripts.
-   - **Production Mode**: Fill in `OPENAI_API_KEY` to use GPT-4o, DALL-E 3, and OpenAI TTS.
-
-### 2. Start Services (Docker)
-
-To run the entire stack (MongoDB, Redis, Backend API, Celery Worker, and Next.js Frontend) using Docker:
+### 1 — Clone the repo
 
 ```bash
-docker-compose up --build
+git clone https://github.com/webdevkaif/Qoneqt-Creator-AI.git
+cd Qoneqt-Creator-AI
 ```
 
-- **Frontend**: `http://localhost:3000`
-- **Backend API**: `http://localhost:8000`
-- **Swagger Docs**: `http://localhost:8000/api/docs`
+### 2 — Install dependencies & start everything
 
-### 3. Running Services Locally (Without Docker)
-
-You can run both the frontend and backend simultaneously using the provided root `package.json` script. This handles installing both python and node dependencies, and running them concurrently.
-
-**Step 1: Install All Dependencies**
 ```bash
+npm install          # installs root concurrently helper
+npm run install:all  # installs frontend + backend deps
+npm run dev          # starts both servers simultaneously
+```
+
+That's it! Open your browser:
+
+| Service | URL |
+|---------|-----|
+| 🌐 **Frontend** | http://localhost:3000 |
+| 🔧 **Backend API** | http://localhost:8000 |
+| 📖 **Swagger Docs** | http://localhost:8000/api/docs |
+
+> **Demo Mode** is active by default — no API keys required. The app uses local mock data for AI generation.
+
+---
+
+## 🔑 Enable Real AI (Optional)
+
+To use GPT-4o scripts, DALL-E 3 images, and OpenAI TTS:
+
+```bash
+cp backend/.env backend/.env.local   # already created for you
+```
+
+Open `backend/.env` and fill in:
+
+```env
+OPENAI_API_KEY=sk-...         # enables real AI generation
+ELEVENLABS_API_KEY=...        # (optional) better TTS voices
+STABILITY_API_KEY=...         # (optional) alternative image gen
+```
+
+Restart the backend — it auto-detects keys and switches out of Demo Mode.
+
+---
+
+## 🛠 Manual Start (per-terminal)
+
+If you prefer running services individually:
+
+**Terminal 1 — Backend (FastAPI)**
+```bash
+cd backend
+python3 -m venv venv
+source venv/bin/activate      # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+**Terminal 2 — Frontend (Next.js)**
+```bash
+cd frontend
 npm install
-npm run install:all
-```
-
-**Step 2: Start Both Servers Simultaneously**
-```bash
 npm run dev
 ```
 
-This starts:
-- **Frontend** at `http://localhost:3000`
-- **Backend API** at `http://localhost:8000`
-
-If you have Redis available and want to run the background Celery workers (not strictly required if eager tasks are enabled):
-**Worker (Optional Terminal)**:
+**Terminal 3 — Background Worker (Optional — needs Redis)**
 ```bash
 cd backend
 source venv/bin/activate
 celery -A app.workers.celery_app worker --loglevel=info --concurrency=2
 ```
 
+> Without Redis, tasks run synchronously (still works, just slower).
+
 ---
 
-## 🧪 Testing
+## 🐳 Docker Setup (Full Stack)
 
-The backend includes a comprehensive pytest suite covering authentication, API routing, MongoDB integration, background job queuing, and file storage.
+For MongoDB + Redis + everything in one command:
 
-To run the backend tests:
+```bash
+# 1. Copy and fill environment file
+cp .env.example backend/.env
+
+# 2. Launch full stack
+docker-compose up --build
+```
+
+Services launched automatically:
+- MongoDB on `localhost:27017`
+- Redis on `localhost:6379`
+- FastAPI backend on `http://localhost:8000`
+- Celery worker (background jobs)
+- Next.js frontend on `http://localhost:3000`
+
+---
+
+## 🚀 Features
+
+| Feature | Description |
+|---------|-------------|
+| 🤖 **AI Script Generation** | GPT-4o creates scene-by-scene scripts from your topic |
+| 🎨 **AI Image Generation** | DALL-E 3 or Stability AI generates visuals per scene |
+| 🔊 **AI Narration (TTS)** | OpenAI TTS or ElevenLabs voices narrate each scene |
+| 🎬 **FFmpeg Video Rendering** | Assembles scenes into a final MP4 with subtitles |
+| 🌐 **Qoneqt Publishing** | Publishes video directly to Qoneqt Global Feed |
+| 🔐 **JWT Auth** | Secure cookie-based authentication with refresh tokens |
+| 📊 **Job Queue** | Celery + Redis for non-blocking background processing |
+| 🧊 **Demo Mode** | Full app experience with no API keys required |
+
+---
+
+## 📐 Tech Stack
+
+```
+Frontend       Next.js 14 · TypeScript · React Context · Axios · Lucide Icons
+Backend        FastAPI · Python 3.9 · Pydantic v2 · Beanie (async MongoDB ODM)
+Database       MongoDB (motor) · mongomock-motor (in-memory fallback)
+Queue          Celery · Redis (optional — eager fallback when unavailable)
+Media          FFmpeg · Pillow
+Auth           JWT (python-jose) · bcrypt
+Storage        Local filesystem · AWS S3 (configurable)
+Infrastructure Docker · Docker Compose
+```
+
+---
+
+## 📖 API Reference
+
+Interactive docs: **http://localhost:8000/api/docs**
+
+### Auth
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/v1/auth/register` | Register new user |
+| `POST` | `/api/v1/auth/login` | Login, receive JWT cookie |
+| `GET`  | `/api/v1/auth/me` | Get current user |
+| `POST` | `/api/v1/auth/logout` | Clear auth cookies |
+
+### Projects
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/v1/projects` | Create project |
+| `GET`  | `/api/v1/projects` | List your projects |
+| `GET`  | `/api/v1/projects/{id}` | Get project details |
+| `PATCH`| `/api/v1/projects/{id}` | Update project |
+
+### Generation (AI Pipeline)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/v1/generate/script/{id}` | Generate script via LLM |
+| `POST` | `/api/v1/generate/visuals/{id}` | Generate scene images |
+| `POST` | `/api/v1/generate/narration/{id}` | Generate TTS audio |
+| `POST` | `/api/v1/generate/render/{id}` | Render final MP4 |
+| `GET`  | `/api/v1/generate/jobs/{jobId}` | Poll job progress |
+
+### System
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/v1/system/health` | Health check + provider status |
+
+---
+
+## 🧪 Running Tests
 
 ```bash
 cd backend
-python -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
-# Tests require active MongoDB/Redis on localhost
 pytest tests/ -v
 ```
 
----
-
-## 📖 API Usage
-
-The backend exposes a fully documented REST API. Access the Swagger UI at `http://localhost:8000/api/docs`.
-
-### Key Endpoints:
-- `POST /api/v1/auth/register`: Create a new user. Returns JWT cookies.
-- `POST /api/v1/projects`: Create a video project draft.
-- `POST /api/v1/generate/script/{id}`: Dispatch a background Celery job to generate a script via LLM.
-- `GET /api/v1/generate/jobs/{id}`: Poll Celery task progress.
-- `POST /api/v1/generate/render/{id}`: Dispatch FFmpeg assembly job.
-- `POST /api/v1/publish/{id}`: Publish completed video.
+> Tests use `mongomock-motor` so no real MongoDB needed.
 
 ---
 
-## 🚢 Deployment Instructions
+## 🚢 Deployment
 
-### 1. Frontend (Vercel)
-The Next.js frontend is optimized for deployment on Vercel.
-1. Push the repository to GitHub.
-2. Import the `frontend` directory as a new Vercel project.
-3. Set the Environment Variable:
-   - `NEXT_PUBLIC_API_URL`: Your deployed backend URL (e.g., `https://api.yourdomain.com`)
-
-### 2. Backend & Worker (Render / Railway / AWS / GCP)
-The backend requires a platform that supports persistent disk (for storage) and background processes (Celery), plus FFmpeg.
-
-**Recommended Setup (Docker)**:
-Deploy the provided `backend/Dockerfile` to a container service (e.g., Google Cloud Run, AWS ECS, or Render).
-- **Web Service**: Command `uvicorn app.main:app --host 0.0.0.0 --port 8000`
-- **Worker Service**: Command `celery -A app.workers.celery_app worker --loglevel=info`
-
-*Note: Ensure both services connect to the same managed MongoDB and Redis instances, and share a storage volume or configure the S3 backend.*
-
-### 3. Cloud Storage (Production)
-For production, local file storage is insufficient. 
-Update `.env` to use S3-compatible storage:
-```env
-STORAGE_BACKEND=s3
-AWS_ACCESS_KEY_ID=your_key
-AWS_SECRET_ACCESS_KEY=your_secret
-AWS_S3_BUCKET=your_bucket
+### Frontend → Vercel
 ```
-*(You will need to implement the S3 boto3 upload logic inside `app/utils/storage.py` where the current local file write happens).*
+1. Import the GitHub repo on vercel.com
+2. Set Root Directory: frontend
+3. Add env var: NEXT_PUBLIC_API_URL=https://your-backend-url.com
+```
+
+### Backend → Render / Railway / Cloud Run
+```
+1. Deploy backend/ directory as a Docker service
+2. Start command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+3. Add all env vars from backend/.env
+4. Connect to managed MongoDB Atlas + Redis Cloud
+```
+
+---
+
+## 📁 Project Structure
+
+```
+Qoneqt-Creator-AI/
+├── frontend/                 # Next.js 14 App
+│   ├── app/
+│   │   ├── auth/             # Login / Register pages
+│   │   ├── dashboard/        # Project dashboard
+│   │   ├── studio/           # Video creation studio
+│   │   └── settings/         # User settings
+│   ├── contexts/             # AuthContext
+│   └── lib/api.ts            # Axios API client
+│
+├── backend/                  # FastAPI App
+│   ├── app/
+│   │   ├── api/routes/       # auth, projects, generation, publish, system
+│   │   ├── core/             # config, security, database
+│   │   ├── models/           # Beanie ODM models
+│   │   ├── schemas/          # Pydantic schemas
+│   │   ├── workers/          # Celery tasks
+│   │   ├── adapters/         # AI provider factory (demo/real)
+│   │   └── utils/            # storage, ffmpeg helpers
+│   ├── tests/                # pytest test suite
+│   ├── requirements.txt
+│   └── .env                  # ← your local env file
+│
+├── docker-compose.yml
+├── .vscode/settings.json     # IDE Python interpreter config
+└── package.json              # Root dev runner (concurrently)
+```
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repo
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+MIT © [webdevkaif](https://github.com/webdevkaif)
