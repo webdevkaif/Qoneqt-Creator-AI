@@ -8,16 +8,25 @@ from typing import Optional
 from celery import Task
 from loguru import logger
 from app.workers.celery_app import celery_app
+from app.core.config import settings
 
 
 def run_async(coro):
     """Run an async coroutine from within a sync Celery task."""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
     try:
-        return loop.run_until_complete(coro)
-    finally:
-        loop.close()
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+        
+    if loop and loop.is_running():
+        return loop.create_task(coro)
+    else:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            return loop.run_until_complete(coro)
+        finally:
+            loop.close()
 
 
 async def _update_job(job_id: str, status: str, progress: int,
@@ -275,7 +284,7 @@ def render_video_task(self, job_id: str, project_id: str, owner_id: str):
             combined_audio_path = None
             scene_audios = [s.audio_path for s in scenes if s.audio_path]
             if scene_audios and all(scene_audios):
-                import tempfile, subprocess
+                import subprocess
                 tmp_dir = tempfile.mkdtemp(prefix="qoneqt_audio_")
                 concat_file = os.path.join(tmp_dir, "audio_concat.txt")
                 combined_audio_path = os.path.join(tmp_dir, "combined_audio.aac")
@@ -288,6 +297,7 @@ def render_video_task(self, job_id: str, project_id: str, owner_id: str):
                     capture_output=True
                 )
                 if result.returncode != 0:
+                    logger.warning(f"Audio concat failed: {result.stderr.decode()[:200]}")
                     combined_audio_path = None
 
             # Generate SRT
@@ -402,6 +412,25 @@ def render_video_task(self, job_id: str, project_id: str, owner_id: str):
 
 
 async def _init_db():
-    """Initialize MongoDB connection for a worker process."""
+    """Initialize MongoDB connection for a worker process.
+
+    In eager/demo mode (no Redis), Celery tasks run synchronously inside the
+    FastAPI process. The DB is already initialized by FastAPI's lifespan event.
+    Re-calling connect_db() would create a NEW isolated AsyncMongoMockClient()
+    which is a completely separate in-memory DB — any jobs saved there are
+    invisible to the FastAPI process, causing persistent "Job not found" errors.
+
+    We check whether Beanie is already initialized on the model and skip
+    re-initialization when it is.
+    """
+    try:
+        from app.models.job import GenerationJob
+        # get_motor_collection() raises if Beanie hasn't been initialized yet
+        col = GenerationJob.get_motor_collection()
+        if col is not None:
+            return  # Already initialized — reuse existing DB connection
+    except Exception:
+        pass  # Not yet initialized — fall through and connect
     from app.core.database import connect_db
     await connect_db()
+

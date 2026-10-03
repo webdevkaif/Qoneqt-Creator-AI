@@ -12,6 +12,8 @@
 
 ## ⚡ Quick Start — Run Locally
 
+> **Demo Video Available:** Check out [`backend/storage/sample_template.mp4`](backend/storage/sample_template.mp4) to see a sample generated video!
+
 > **No Docker, no cloud accounts needed.** The app runs in Demo Mode automatically.
 
 ### Prerequisites

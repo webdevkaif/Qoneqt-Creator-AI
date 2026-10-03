@@ -110,26 +110,51 @@ class DemoLLMAdapter(LLMAdapter):
 
 
 class DemoImageAdapter(ImageAdapter):
-    """Returns a simple colored placeholder PNG image without any external calls."""
+    """Returns a styled scene image using Pillow without any external API calls."""
 
     async def generate_image(self, prompt: str, style: str, aspect_ratio: str) -> tuple[bytes, str]:
-        # Generate a minimal valid PNG (1x1 dark blue pixel) as placeholder
-        # Real implementation would call DALL-E or Stability AI
-        import base64
-        # 100x56 dark blue PNG (hardcoded minimal valid PNG)
-        # This is a real PNG header + IDAT chunk for a solid color image
-        png_1x1_dark_blue = (
-            b'\x89PNG\r\n\x1a\n'  # PNG signature
-            b'\x00\x00\x00\rIHDR'  # IHDR chunk length + type
-            b'\x00\x00\x00\x01'    # width: 1
-            b'\x00\x00\x00\x01'    # height: 1
-            b'\x08\x02'            # bit depth 8, color type RGB
-            b'\x00\x00\x00'        # compression, filter, interlace
-            b'\x90wS\xde'          # CRC
-            b'\x00\x00\x00\x0cIDATx\x9cc\xf8\x1f\x00\x01\x01\x00\x05\x18\xd8N'  # IDAT
-            b'\x00\x00\x00\x00IEND\xaeB`\x82'  # IEND
-        )
-        return png_1x1_dark_blue, "png"
+        try:
+            from PIL import Image, ImageDraw
+            dimensions = {
+                "9:16": (720, 1280),
+                "16:9": (1280, 720),
+                "1:1": (800, 800),
+            }
+            w, h = dimensions.get(aspect_ratio, (720, 1280))
+            img = Image.new("RGB", (w, h), color=(10, 15, 30))
+            draw = ImageDraw.Draw(img)
+
+            # Gradient background
+            for y in range(0, h, 2):
+                ratio = y / h
+                r = int(8 * (1 - ratio) + 124 * ratio * 0.3)
+                g = int(145 * (1 - ratio) + 58 * ratio * 0.4)
+                b = int(178 * (1 - ratio) + 237 * ratio * 0.8)
+                draw.line([(0, y), (w, y)], fill=(r, g, b))
+
+            # Inner subtle border
+            draw.rectangle([24, 24, w - 24, h - 24], outline=(34, 211, 238, 120), width=2)
+
+            # Text content
+            draw.text((w // 2 - 80, 60), "QONEQT CREATOR AI", fill=(34, 211, 238))
+            draw.text((w // 2 - 60, 90), f"Style: {style}", fill=(148, 163, 184))
+
+            # Prompt preview
+            preview_text = prompt[:160] + ("..." if len(prompt) > 160 else "")
+            draw.text((60, h // 2 - 40), "SCENE VISUAL", fill=(255, 255, 255))
+            draw.text((60, h // 2), preview_text, fill=(226, 232, 240))
+
+            buf = io.BytesIO()
+            img.save(buf, format="PNG")
+            return buf.getvalue(), "png"
+        except Exception:
+            # Fallback to minimal PNG
+            png_1x1_dark_blue = (
+                b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02'
+                b'\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x1f\x00\x01\x01\x00\x05'
+                b'\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82'
+            )
+            return png_1x1_dark_blue, "png"
 
 
 class DemoTTSAdapter(TTSAdapter):

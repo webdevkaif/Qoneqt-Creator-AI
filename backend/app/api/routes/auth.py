@@ -92,7 +92,7 @@ async def logout(response: Response):
 async def get_me(user_id: str = Depends(get_current_user_id)):
     user = await User.get(user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=401, detail="User not found or session expired")
     return UserResponse(
         id=str(user.id), email=user.email, username=user.username,
         is_admin=user.is_admin, avatar_url=user.avatar_url, created_at=user.created_at,

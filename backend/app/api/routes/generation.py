@@ -21,7 +21,7 @@ UPLOAD_MAX_BYTES = 50 * 1024 * 1024  # 50 MB
 async def _create_job(project_id: str, owner_id: str, job_type: JobType) -> GenerationJob:
     # Check for running duplicate
     existing = await GenerationJob.find_one({
-        "project_id": project_id,
+        "project_id": str(project_id),
         "job_type": job_type.value,
         "status": {"$in": ["queued", "running"]},
     })
@@ -29,8 +29,8 @@ async def _create_job(project_id: str, owner_id: str, job_type: JobType) -> Gene
         raise HTTPException(status_code=409, detail=f"A {job_type.value} job is already running for this project")
 
     job = GenerationJob(
-        project_id=project_id,
-        owner_id=owner_id,
+        project_id=str(project_id),
+        owner_id=str(owner_id),
         job_type=job_type,
     )
     await job.save()
@@ -115,8 +115,16 @@ async def start_video_render(project_id: str, user_id: str = Depends(get_current
 
 @router.get("/jobs/{job_id}", response_model=JobResponse)
 async def get_job_status(job_id: str, user_id: str = Depends(get_current_user_id)):
-    job = await GenerationJob.get(job_id)
-    if not job or job.owner_id != user_id:
+    try:
+        from bson import ObjectId
+        if ObjectId.is_valid(job_id):
+            job = await GenerationJob.get(job_id)
+        else:
+            job = await GenerationJob.find_one({"_id": job_id})
+    except Exception:
+        job = None
+
+    if not job or str(job.owner_id) != user_id:
         raise HTTPException(status_code=404, detail="Job not found")
     return _job_to_response(job)
 
@@ -126,7 +134,7 @@ async def get_project_jobs(project_id: str, user_id: str = Depends(get_current_u
     project = await Project.get(project_id)
     if not project or str(project.owner_id) != user_id:
         raise HTTPException(status_code=404, detail="Project not found")
-    jobs = await GenerationJob.find({"project_id": project_id}).sort("-created_at").to_list()
+    jobs = await GenerationJob.find({"project_id": str(project_id)}).sort("-created_at").to_list()
     return [_job_to_response(j) for j in jobs]
 
 
