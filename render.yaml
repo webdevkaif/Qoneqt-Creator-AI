@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: qoneqt-creator-ai-backend
+    env: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    plan: free
+    region: oregon
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: PORT
+        value: 8000
+      - key: MONGODB_URL
+        value: mongodb://localhost:27017
+      - key: STORAGE_BACKEND
+        value: local
