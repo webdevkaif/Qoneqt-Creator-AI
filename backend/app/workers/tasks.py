@@ -333,6 +333,8 @@ def render_video_task(self, job_id: str, project_id: str, owner_id: str):
                 aspect_ratio=project.aspect_ratio.value,
                 audio_path=combined_audio_path if project.enable_narration else None,
                 subtitle_path=srt_path_stored if project.enable_subtitles and srt_url else None,
+                subtitle_style=getattr(project, "subtitle_style", "tiktok_yellow"),
+                bg_music=getattr(project, "bg_music", "ambient_chill"),
                 progress_callback=progress_cb,
             )
 

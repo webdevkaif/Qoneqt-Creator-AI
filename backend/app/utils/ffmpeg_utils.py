@@ -22,6 +22,13 @@ ASPECT_RATIO_MAP = {
     "1:1": (1080, 1080),
 }
 
+SUBTITLE_STYLES = {
+    "tiktok_yellow": "FontSize=26,PrimaryColour=&H00FFFF,OutlineColour=&H000000,BackColour=&H80000000,Bold=1,MarginV=40",
+    "neon_cyber": "FontSize=24,PrimaryColour=&HFFFF00,OutlineColour=&H000000,BackColour=&HBF000000,Bold=1,MarginV=45",
+    "minimal_white": "FontSize=22,PrimaryColour=&HFFFFFF,OutlineColour=&H000000,Bold=1,MarginV=30",
+    "cinema_gold": "FontSize=24,PrimaryColour=&H00D7FF,OutlineColour=&H000000,Bold=1,MarginV=35",
+}
+
 
 def ffmpeg_available() -> bool:
     try:
@@ -112,12 +119,12 @@ async def assemble_video(
     audio_path: Optional[str] = None,
     subtitle_path: Optional[str] = None,
     transition: bool = True,
+    subtitle_style: str = "tiktok_yellow",
+    bg_music: Optional[str] = "ambient_chill",
     progress_callback=None,
 ) -> tuple[bool, str]:
     """
-    Full video assembly pipeline.
-    scenes: list of dicts with keys: image_path, video_clip_path, duration, audio_path
-    Returns (success, error_message)
+    Full video assembly pipeline with subtitle styles & bg music mixing.
     """
     if not ffmpeg_available():
         template = Path(__file__).resolve().parent.parent.parent / "storage" / "sample_template.mp4"
@@ -145,9 +152,7 @@ async def assemble_video(
             clip_out = str(work_dir / f"scene_{i:03d}.mp4")
             duration = max(1.0, float(scene.get("duration", 3.0)))
 
-            # Use video clip if available, otherwise image
             if scene.get("video_clip_path") and Path(scene["video_clip_path"]).exists():
-                # Resize/crop existing clip
                 code, _, err = await run_ffmpeg([
                     "-y", "-i", scene["video_clip_path"],
                     "-t", str(duration),
@@ -162,9 +167,7 @@ async def assemble_video(
                     scene["image_path"], duration, clip_out, width, height
                 )
             else:
-                # Generate a color placeholder
                 color = ["#0d1b2a", "#1a237e", "#1b5e20", "#4a148c", "#b71c1c"][i % 5]
-                r, g, b = int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
                 code, _, err = await run_ffmpeg([
                     "-y", "-f", "lavfi",
                     "-i", f"color=c=0x{color[1:]}:size={width}x{height}:rate=30",
@@ -176,7 +179,6 @@ async def assemble_video(
 
             if not success:
                 logger.warning(f"Scene {i} clip generation failed, using placeholder")
-                # Try a simpler placeholder
                 await run_ffmpeg([
                     "-y", "-f", "lavfi",
                     "-i", f"color=c=black:size={width}x{height}:rate=30",
@@ -189,7 +191,6 @@ async def assemble_video(
                 pct = 5 + int((i + 1) / len(scenes) * 35)
                 await progress_callback(pct, f"Processed scene {i+1}/{len(scenes)}")
 
-        # Concatenate all scene clips
         if progress_callback:
             await progress_callback(45, "Concatenating scenes...")
 
@@ -210,7 +211,6 @@ async def assemble_video(
         if progress_callback:
             await progress_callback(60, "Processing audio...")
 
-        # Prepare audio
         final_audio = None
         if audio_path and Path(audio_path).exists():
             normalized_audio = str(work_dir / "audio_norm.aac")
@@ -219,21 +219,41 @@ async def assemble_video(
             else:
                 final_audio = audio_path
         else:
-            # Generate silence matching video duration
             total_duration = sum(max(1.0, float(s.get("duration", 3.0))) for s in scenes)
             silent = str(work_dir / "silent.aac")
             await generate_silent_audio(total_duration, silent)
             final_audio = silent
 
+        # Mix background music if enabled
+        if bg_music and bg_music != "none":
+            total_dur = sum(max(1.0, float(s.get("duration", 3.0))) for s in scenes)
+            mixed_audio = str(work_dir / "audio_mixed.aac")
+            synth_music = str(work_dir / "bg_synth.aac")
+            freq = {"lofi_beats": "180", "epic_cinematic": "110", "upbeat_cyber": "240"}.get(bg_music, "140")
+            synth_code, _, _ = await run_ffmpeg([
+                "-y", "-f", "lavfi",
+                "-i", f"sine=frequency={freq}:sample_rate=44100",
+                "-t", str(total_dur),
+                "-af", "volume=0.08,lowpass=f=800",
+                "-c:a", "aac", synth_music
+            ])
+            if synth_code == 0:
+                mix_code, _, _ = await run_ffmpeg([
+                    "-y", "-i", final_audio, "-i", synth_music,
+                    "-filter_complex", "[0:a]volume=1.0[v];[1:a]volume=0.12[bg];[v][bg]amix=inputs=2:duration=first[outa]",
+                    "-map", "[outa]", "-c:a", "aac", "-b:a", "128k", mixed_audio
+                ])
+                if mix_code == 0:
+                    final_audio = mixed_audio
+
         if progress_callback:
             await progress_callback(70, "Rendering final video...")
 
-        # Combine video + audio (+ subtitles if provided)
         ffmpeg_args = ["-y", "-i", concat_video, "-i", final_audio]
         if subtitle_path and Path(subtitle_path).exists():
-            # Burn subtitles in
+            style_str = SUBTITLE_STYLES.get(subtitle_style, SUBTITLE_STYLES["tiktok_yellow"])
             ffmpeg_args += [
-                "-vf", f"subtitles='{subtitle_path}':force_style='FontSize=24,PrimaryColour=&Hffffff,OutlineColour=&H000000,Bold=1'",
+                "-vf", f"subtitles='{subtitle_path}':force_style='{style_str}'",
             ]
         ffmpeg_args += [
             "-c:v", "libx264",
@@ -253,16 +273,8 @@ async def assemble_video(
         if progress_callback:
             await progress_callback(90, "Validating output...")
 
-        # Validate output file
         if not Path(output_path).exists() or Path(output_path).stat().st_size < 1000:
             return False, "Rendered file is missing or too small"
-
-        # Quick probe to confirm it's valid
-        probe_code, probe_out, _ = await run_ffmpeg([
-            "-v", "quiet", "-print_format", "json", "-show_format",
-            "-i", output_path,
-        ])
-        # ffprobe is separate, just check file size for now
 
         if progress_callback:
             await progress_callback(100, "Render complete!")
@@ -291,12 +303,10 @@ async def generate_thumbnail(video_path: str, output_path: str, time: float = 1.
         if code == 0 and os.path.exists(output_path):
             return True
 
-    # Fallback thumbnail generation using Pillow
     try:
         from PIL import Image, ImageDraw
         img = Image.new("RGB", (640, 360), color=(15, 23, 42))
         draw = ImageDraw.Draw(img)
-        # Background gradient effect lines
         for y in range(0, 360, 4):
             color = (int(8 + (y / 360) * 20), int(145 - (y / 360) * 80), int(178 + (y / 360) * 50))
             draw.line([(0, y), (640, y)], fill=color)

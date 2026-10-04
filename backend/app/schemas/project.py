@@ -15,6 +15,8 @@ class ProjectCreate(BaseModel):
     voice_id: Optional[str] = None
     enable_subtitles: bool = True
     enable_narration: bool = True
+    subtitle_style: str = "tiktok_yellow"
+    bg_music: Optional[str] = "ambient_chill"
     custom_community: Optional[str] = None
     description: Optional[str] = None
 
@@ -30,6 +32,8 @@ class ProjectUpdate(BaseModel):
     voice_id: Optional[str] = None
     enable_subtitles: Optional[bool] = None
     enable_narration: Optional[bool] = None
+    subtitle_style: Optional[str] = None
+    bg_music: Optional[str] = None
     description: Optional[str] = None
     script: Optional[dict] = None
     video_title: Optional[str] = None
@@ -47,6 +51,8 @@ class ProjectResponse(BaseModel):
     aspect_ratio: AspectRatio
     style: VideoStyle
     status: ProjectStatus
+    subtitle_style: str = "tiktok_yellow"
+    bg_music: Optional[str] = "ambient_chill"
     thumbnail_url: Optional[str] = None
     video_url: Optional[str] = None
     video_title: Optional[str] = None

@@ -161,8 +161,9 @@ async def test_project_ownership(auth_client, client):
 @pytest.mark.anyio
 async def test_update_project(auth_client):
     resp = await auth_client.post(f"{BASE}/projects", json={
-        "title": "Update Test", "topic": "ML", "community": "Technology", "duration": 15, "style": "Educational",
+        "title": "Update Test", "topic": "Machine Learning", "community": "Technology", "duration": 15, "style": "Educational",
     })
+    assert resp.status_code == 201, f"Create failed: {resp.status_code} {resp.text}"
     pid = resp.json()["id"]
     resp2 = await auth_client.patch(f"{BASE}/projects/{pid}", json={"title": "Updated Title"})
     assert resp2.status_code == 200

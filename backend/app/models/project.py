@@ -54,6 +54,8 @@ class Project(Document):
     voice_id: Optional[str] = None
     enable_subtitles: bool = True
     enable_narration: bool = True
+    subtitle_style: str = "tiktok_yellow"
+    bg_music: Optional[str] = "ambient_chill"
     custom_community: Optional[str] = None
 
     # Script / content

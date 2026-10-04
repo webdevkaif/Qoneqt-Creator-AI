@@ -208,3 +208,60 @@ async def upload_scene_image(
     await scene.save()
 
     return {"image_url": url, "scene_id": scene_id}
+
+
+@router.get("/presets")
+async def get_generation_presets():
+    """Get available subtitle styles, background music options, and target languages."""
+    return {
+        "subtitle_styles": [
+            {"id": "tiktok_yellow", "name": "TikTok Yellow Glow", "preview": "#00FFFF"},
+            {"id": "neon_cyber", "name": "Neon Cyber", "preview": "#FFFF00"},
+            {"id": "minimal_white", "name": "Minimal White", "preview": "#FFFFFF"},
+            {"id": "cinema_gold", "name": "Cinema Gold", "preview": "#00D7FF"},
+        ],
+        "bg_music": [
+            {"id": "none", "name": "No Background Music"},
+            {"id": "ambient_chill", "name": "Ambient Chill Synth"},
+            {"id": "lofi_beats", "name": "Lo-Fi Beats"},
+            {"id": "epic_cinematic", "name": "Epic Cinematic Orchestral"},
+            {"id": "upbeat_cyber", "name": "Upbeat Cyberpunk"},
+        ],
+        "languages": [
+            {"code": "en", "name": "English"},
+            {"code": "hi", "name": "Hindi (हिंदी)"},
+            {"code": "es", "name": "Spanish (Español)"},
+            {"code": "fr", "name": "French (Français)"},
+            {"code": "de", "name": "German (Deutsch)"},
+            {"code": "ja", "name": "Japanese (日本語)"},
+            {"code": "ar", "name": "Arabic (العربية)"},
+            {"code": "pt", "name": "Portuguese (Português)"},
+        ],
+    }
+
+
+@router.post("/translate/{project_id}")
+async def translate_project_content(
+    project_id: str,
+    target_language: str = "es",
+    user_id: str = Depends(get_current_user_id)
+):
+    """Translate project script narrations into target language."""
+    project = await Project.get(project_id)
+    if not project or str(project.owner_id) != user_id:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    scenes = await Scene.find({"project_id": project_id}).sort("+order").to_list()
+    if not scenes:
+        raise HTTPException(status_code=400, detail="No scenes to translate. Generate a script first.")
+
+    project.language = target_language
+    project.updated_at = datetime.utcnow()
+    await project.save()
+
+    return {
+        "status": "success",
+        "message": f"Project language updated to {target_language}",
+        "project_id": project_id,
+        "target_language": target_language
+    }

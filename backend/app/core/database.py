@@ -24,10 +24,11 @@ async def connect_db():
     from app.models.job import GenerationJob
     from app.models.publish import PublishRecord
     from app.models.settings import UserSettings
+    from app.models.analytics import FeatureClick
 
     await init_beanie(
         database=_client[settings.MONGODB_DB_NAME],
-        document_models=[User, Project, Scene, Asset, GenerationJob, PublishRecord, UserSettings],
+        document_models=[User, Project, Scene, Asset, GenerationJob, PublishRecord, UserSettings, FeatureClick],
     )
     logger.info("Database connected and Beanie initialized")
 

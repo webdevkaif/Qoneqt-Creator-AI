@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="frontend/public/logo.svg" alt="Qoneqt Creator AI Logo" width="300" />
+</p>
+
 # Qoneqt Creator AI 🎬✨
 
 > **AI-powered video creation platform** — transform any topic, prompt, or trend into a polished short video ready for the Qoneqt Global Feed.

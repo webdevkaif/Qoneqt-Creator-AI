@@ -55,6 +55,12 @@ class Settings(BaseSettings):
     RATE_LIMIT_PER_MINUTE: int = 60
     AUTH_RATE_LIMIT_PER_MINUTE: int = 10
 
+    # Email / SMTP
+    BACKEND_EMAIL: Optional[str] = None
+    BACKEND_EMAIL_PASSWORD: Optional[str] = None
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+
     @property
     def demo_mode(self) -> bool:
         """Returns True if no real AI provider keys are configured."""
