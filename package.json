@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "description": "Root package to run both frontend and backend concurrently",
   "scripts": {
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && npm run start",
     "install:all": "npm run install:frontend && npm run install:backend",
     "install:frontend": "cd frontend && npm install",
     "install:backend": "cd backend && python3 -m venv venv && ./venv/bin/pip install -r requirements.txt",
